@@ -1,0 +1,400 @@
+{% extends "main.html" %}
+
+{% block page_title %} Database <em>"{{ name }}" </em> {% endblock %}
+
+{% block main %}
+
+	{% if msg != '' %}
+		<div class="alert alert-{{msg_type}}">
+			<a href="#" class="close" data-dismiss="alert">&times;</a>
+			<strong>{{ msg_type }}</strong> {{ msg }}
+		</div>
+	{% endif %}
+
+	<form id="import-file-submit" style="display: none;" method="post" enctype="multipart/form-data" >
+		{% csrf_token %}
+		<input type="file" id="import-file" name="import-file" />
+		<input type="hidden" name="d_id" value="{{d_id}}" />
+		<input type="hidden" name="action" value="import-field" id="import-action" />
+	</form>
+
+	<div class="col-sm-12 section-header db-schema" data-toggle="collapse" data-target="#db-schema">
+		<em> Database Schema</em>
+		<label class="carrot btn pull-right" > <span class="glyphicon glyphicon-triangle-bottom"> </span> </label>
+	</div>
+	<div class="clearfix"> </div> 
+	<div class="collapse" id="db-schema">
+		<div class="fields col-sm-7">
+			<div class="field-header">
+				<label class="col-sm-4"> Name </label>
+				<label class="col-sm-8"> Rule </label>
+			</div>
+			<hr class="col-sm-11" /> 
+			<div class="items-wrapper" >
+				<div id="field-items">
+					{% for field in fields %}
+						<div class="field-item col-sm-12"> 
+							<span class="col-sm-4"> {{ field.name }} </span> 
+							<span > {{ field.rule }} </span> 
+							<span itemvalue="{{ field.id }}" class="remove-item glyphicon glyphicon-remove pull-right"> </span> 
+						</div> 
+						<div  class="col-sm-12"> <hr/> </div>
+						<div class="clearfix"> </div>
+					{% endfor %}
+				</div>
+				<div class="clearfix"> </div>
+			</div>
+			<div class="field-item">
+				<div class="col-sm-4 "> <input type="text" id="field-name" class="form-control" placeholder="Field name" /> </div>
+				<div class="col-sm-8 "> <input type="text" id="field-rule" class="form-control" placeholder="Field rule" /> </div>
+				<div class="clearfix"> </div> 
+
+				<button type="button" id="import-field" class="c-button import-button btn btn-default" title="Import from csv" > 
+					<span class="glyphicon glyphicon-open"> </span> 
+				</button>
+				<button type="button" id="export-field" class="c-button export-button col-sm-offset-1 btn btn-default" title="Export to csv" >  
+					<span class="glyphicon glyphicon-save"> </span>  
+				</button>
+
+				<input type="button" id="new-field" class="c-button add-button pull-right btn btn-default" value="+" title="Add field" />
+			</div>
+
+			<div class="clearfix"> </div>
+		</div>
+
+		<div class="urls col-sm-5 ">
+			<div class="url-header">
+				<label> Url </label>
+			</div>
+			<hr class="col-sm-11" /> 
+			<div class="items-wrapper" >
+				<div id="url-items" >
+					{% for url_ in  urls %}
+						<div class="url-item col-sm-12"> 
+							<span> {{ url_.url }} </span> 
+							<span itemvalue="{{ url_.id }}" class="remove-item glyphicon glyphicon-remove pull-right"> </span>  
+						</div> 
+						<div class="col-sm-12"> <hr/> </div>
+					{% endfor %}
+				</div>
+				<div class="clearfix"> </div>
+			</div>
+			<div class="url-item">
+				<input type="url" id="url-item" class="form-control" placeholder="Url" />
+
+				<button type="button" id="import-url" class="c-button import-button  btn btn-default" title="Import from csv" >  
+					<span class="glyphicon glyphicon-open"> </span>  
+				</button>
+				<button type="button" id="export-url" class="c-button export-button col-sm-offset-1 btn btn-default" title="Export to csv" >  
+					<span class="glyphicon glyphicon-save"> </span>  
+				</button>
+
+				<input type="button" id="new-url" class="c-button add-button pull-right btn btn-default" value="+" title="Add url" />
+			</div>
+		</div>
+		<div class="clearfix"> </div>
+	</div>
+
+	<div class="clearfix"> </div>
+	<br/>
+
+
+	<div class="col-sm-12 section-header" data-toggle="collapse" data-target="#db-data">
+		<em> Stored Data </em>
+		<label class="carrot btn pull-right"> <span class="glyphicon glyphicon-triangle-bottom"> </span> </label>
+	</div>
+	<div class="clearfix"> </div> 
+	<div class="collapse" id="db-data">
+		<div class="table-wrapper col-sm-12">
+			<table class="table table-stripped">
+				{% if 0 == 1 %}
+					<thead>
+						<tr>
+							<th> Url </th>
+							{% for field in fields %}
+								<th> {{ field.name }} </th>
+							{% endfor %}
+						</tr>
+					</thead>
+					<tbody>
+						{% for url_ in urls %}
+							<tr>
+								<td> {{ url_.url }} </td>
+								{% for field in fields %}
+									<td> { { url_.data[field.id] } } </td>
+								{% endfor %}
+							</tr>
+						{% endfor %}
+					</tbody>
+				{% endif %}
+			</table>
+		</div>
+		<div class="clearfix"> </div>
+		<button type="button" class="btn btn-default pull-right c-button r-button" id="save-db-data" > <span class="glyphicon glyphicon-floppy-disk"> </span> Save Changes </button>
+		<button type="button" class="btn btn-default c-button pull-right r-button" id="export-data"> <span class="glyphicon glyphicon-save" title="Export to csv" > </span> </button>
+	</div>
+
+
+	<div class="stored-data row">
+	</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+	<script language="javascript">
+		$(document).ready(function() {
+			var field_item = '<div class="field-item col-sm-12"> <span class="col-sm-4"> FIELD_NAME </span> <span > FIELD_RULE </span> <span itemvalue = "FIELD_ID" class="remove-item glyphicon glyphicon-remove pull-right"> </span> </div> <div  class="col-sm-12"> <hr/> </div>'
+			var url_item = '<div class="url-item col-sm-12"> <span> URL </span> <span itemvalue="URL_ID" class="remove-item glyphicon glyphicon-remove pull-right"> </span>  </div> <div class="col-sm-12"> <hr/> </div>'
+
+			var csrf = $("{% csrf_token %}").val(); 
+			var d_id = {{ d_id }}; 
+
+			$("#new-field").click(function() {
+				var field_name = $("#field-name").val();
+				var field_rule = $("#field-rule").val();
+				if(field_name == '' || field_rule == '')
+					return;
+
+				$.post(
+					"{% url 'database-manage' %}", 
+					{
+						action: 'new-field', 
+						d_id: d_id, 
+						name: field_name, 
+						rule: field_rule, 
+						csrfmiddlewaretoken: csrf
+					}, function(r) {
+						var data = JSON.parse(r);
+						if(data['status'] == 'success') {
+							$("#field-name").val('');
+							$("#field-rule").val('');
+							console.log(field_name + ':' + field_rule);
+							$("#field-items").append(field_item.replace("FIELD_NAME", field_name).replace("FIELD_RULE", field_rule).replace('FIELD_ID', data['id']));
+							refresh_db();
+							attachactions();
+						} else {
+							alert('Something went wrong');
+						}
+					} ); 
+
+			}); 
+			$("#new-url").click(function() {
+				var url = $("#url-item").val();
+				
+				if(url == '') 
+					return;
+				$.post(
+					"{% url 'database-manage' %}", 
+					{
+						action: 'new-url', 
+						d_id: d_id, 
+						url: url,
+						csrfmiddlewaretoken: csrf
+					}, function(r) {
+						var data = JSON.parse(r); 
+						if(data['status'] == 'success') {
+							$("#url-item").val('');
+							$("#url-items").append(url_item.replace("URL", url).replace('URL_ID', data['id'])); 
+							refresh_db();
+							attachactions();
+						} else { 
+							alert("Something went wront"); 
+						}
+					} ); 
+			}); 
+			function attachactions() {
+				$("#field-items .remove-item").click(function() {
+					var id = $(this).attr("itemvalue");
+					var item = $(this).parent()
+					$.post(
+						"{% url 'database-manage' %}", 
+						{
+							action: 'del-field', 
+							d_id: d_id, 
+							id: id, 
+							csrfmiddlewaretoken: csrf
+						}, function(r) {
+							var data = JSON.parse(r);
+							if(data['status'] == 'success') {
+								item.next().remove();
+								item.remove(); 
+								refresh_db();
+							} else {
+								alert("Something went wrong"); 
+							}
+						} ); 
+				}); 
+				$("#url-items .remove-item").click(function() {
+					var id = $(this).attr("itemvalue"); 
+					var item = $(this).parent()
+					$.post(
+						"{% url 'database-manage' %}", 
+						{
+							action: 'del-url', 
+							d_id: d_id, 
+							id: id, 
+							csrfmiddlewaretoken: csrf
+						}, function(r) {
+							var data = JSON.parse(r);
+							if(data['status'] == 'success') {
+								item.next().remove();
+								item.remove(); 
+								refresh_db();
+							} else {
+								alert("Something went wrong"); 
+							}
+						} ); 
+				}); 
+			}
+
+			function refresh_db() {
+				$.post(
+					"{% url 'database-detail' d_id %}", 
+					{
+						action: 'refresh-table', 
+						d_id: d_id, 
+						csrfmiddlewaretoken: csrf
+					}, function(r) {
+						var data = JSON.parse(r);
+						console.log(data);
+						if(data['status'] == 'success') {
+							var fields = '';
+							for(var id in data['fields']) {
+								fields = fields + '<th title="'+data['fields'][id]['name']+'" > '+data['fields'][id]['name']+' </th>';
+							}
+							var w_data = '';
+							for(var id in data['urls']) {
+								w_data = w_data + '<tr> <td title="'+data['urls'][id]['url']+'"> '+data['urls'][id]['url']+'</td>';
+								try{
+									t_data = JSON.parse(data['urls'][id]['data']); 
+								} catch(err) {
+									console.log(err);
+									t_data = undefined
+								}
+								for(var f_id in data['fields']) {
+									var tv = '';
+									if(t_data == undefined || t_data[f_id] == undefined)
+										tv = '';
+									else
+										tv = t_data[f_id]
+									w_data = w_data + '<td class="db-item" uid="'+id+'" fid="'+f_id+'" > <input type="text" value="'+tv+'" title="'+tv+'" /> </td>'
+								}
+								w_data = w_data + '</tr>';
+							}
+							var html = ''+
+								'<table class="table table-stripped">' +
+									'<thead>' +
+										'<tr>' +
+											'<th> Url </th>' + 
+											fields + 
+										'</tr>' +
+									'</thead>' +
+									'<tbody>' +
+										w_data + 
+									'</tbody>' +
+								'</table>';
+							$("#db-data > .table-wrapper").html(html);
+							attach_db_actions();
+						} else {
+							alert("Something went wrong"); 
+						}
+					} ); 
+				
+			}
+
+			var file_type = 'field';
+
+			$("#import-field").click(function() {
+				file_type = 'field';
+				$("#import-action").val("import-field");
+				$("#import-file").click();
+			}); 
+
+			$("#import-url").click(function() {
+				file_type = 'url';
+				$("#import-action").val("import-url");
+				$("#import-file").click();
+			}); 
+
+			$("#import-file").change(function() {
+				$("#import-file-submit").submit()
+			}); 
+
+			$(".section-header").click(function() {
+				$(this).children("label").toggleClass('expanded'); 
+			}); 
+
+			$(".section-header.db-schema").click();
+
+			var change_list = []
+
+			function attach_db_actions() {
+				$("div.table-wrapper .db-item").change(function() {
+					if(change_list.indexOf($(this).attr("uid")) == -1) {
+						change_list.push($(this).attr('uid')); 
+						$(this).parent().addClass("muted");
+					}
+				}); 
+				$("#save-db-data").click(function() {
+					var data = "{ ";
+					for(var id in change_list) {
+						var elems = $("td[uid='"+change_list[id]+"']"); 
+						var one_row = '"{';
+						for(var idx=0; idx < elems.length; idx ++) {
+							one_row = one_row + "|"+$(elems[idx]).attr("fid")+"|: "+ "|"+ $(elems[idx]).children('input').val() +"|,";
+						}
+						one_row = one_row.substring(0, one_row.length - 1) + '}"';
+						data= data + '"'+change_list[id] +'":'+ one_row + ',';
+					}
+					data = data.substring(0, data.length - 1) + '}';
+
+					$.post(
+						"{% url 'database-detail' d_id %}", 
+						{
+							'action': 'update-table', 
+							'data': data, 
+							'csrfmiddlewaretoken': csrf
+						}, function(r) {
+							var data = JSON.parse(r);
+							if(data['status'] == 'success') {
+								refresh_db();
+							} else {
+								alert("Something went wrong"); 
+							}
+						} )
+
+				}); 
+			}
+
+			$("#export-field").click(function() {
+				export_file('field');
+			}); 
+
+			$("#export-url").click(function() {
+				export_file('url');
+			}); 
+
+			$("#export-data").click(function() {
+				export_file('data');
+			}); 
+
+			function export_file(type) {
+				$.post(
+					"{% url 'database-detail' d_id %}", 
+					{
+						'action': 'export', 
+						'type': type, 
+						'csrfmiddlewaretoken': csrf
+					}, function(r) {
+						console.log(r);
+						window.location = "{% url 'download_out' %}"
+					} ); 
+			}
+
+			attachactions();
+			refresh_db();
+
+		}); 
+	</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "main.html" %}
+
+{% load bootstrap3 %}
+{% load bootstrap_themes %}
+
+{% block main %}
+<div class="portal  col-sm-4 col-sm-offset-4 ">
+	<form action = "{% url 'register' %}" id="register_form" data-toggle="validator" method="post">
+		{% csrf_token %}
+		{% bootstrap_form form %}
+		<button type="submit" class="btn btn-default col-sm-offset-1">
+			{% bootstrap_icon 'user' %} Register
+		</button>
+	</form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+	<script language = "JavaScript">
+		$(document).ready(function() {
+			$('#password2').popover({
+				html: true,
+				content: function() {
+					return $('<div><span class="glyphicon glyphicon-warning-alert"></span> Password doesn\'t match</div>').html()
+				}
+			});
+			$("#register_form").submit(function() {
+				if($("#password").val() != $("#password2").val()) {
+					$("#password2").focus()
+					$("#password2").popover('show');
+					setTimeout(function() {
+						$("#password2").popover('hide');
+					}, 3000);
+					return false;
+				}
+			}); 
+		}); 
+	</script>
+
+{% endblock %}

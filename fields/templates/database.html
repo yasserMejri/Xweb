@@ -1,0 +1,87 @@
+{% extends "main.html" %}
+
+{% block page_title %} Databases {% endblock %}
+
+{% block main %}
+	{% if msg != '' %}
+		<div class="alert alert-warning">
+			<a href="#" class="close" data-dismiss="alert">&times;</a>
+			<strong>Error!</strong> {{ err_msg }}
+		</div>
+	{% endif %}
+	<div class="db-wrapper col-sm-offset-1">
+
+		{% for db in all_dbs %}
+			<a href = "{% url 'database-detail' db.id %}" itemvalue="{{db.id}}" >
+				<div class="db-item col-sm-3">
+					{{ db.name }}
+					<span class="remove-db glyphicon glyphicon-remove-circle"  data-toggle="confirmation" data-placement="left" > </span>
+				</div>
+			</a>
+		{% endfor %}
+
+		<div class="db-item add-item col-sm-3" data-toggle="modal" data-target="#myModal">
+			<span class="glyphicon glyphicon-plus-sign"> </span>
+		</div>
+
+	</div>
+
+
+<!-- Database creation modal form -->
+
+	<div id="myModal" class="modal fade" role="dialog">
+		<form action="{% url 'database' %}" method="post">
+			{% csrf_token %}
+			<input type="hidden" name="action" value="create-db" />
+	  <div class="modal-dialog">
+
+		<!-- Modal content-->
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal">&times;</button>
+			<h4 class="modal-title">Create New Database</h4>
+		  </div>
+		  <div class="modal-body">
+			<div class="form-group"><label class="control-label" for="id_dbname">Database Name</label><input type="text" name="dbname" title="Please enter name you like." required="" id="id_dbname" maxlength="150" placeholder="Database Name" class="form-control">
+
+			</div>
+		  </div>
+		  <div class="modal-footer">
+			<button type="submit" class="btn btn-default">Create</button>
+		  </div>
+		</div>
+
+	  </div>
+	  	</form>
+	</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+	<script language="javascript">
+		$(document).ready(function() {
+			var csrf = $("{% csrf_token %}").val();
+			$("div.db-item span.remove-db").confirmation();
+			$("div.db-item span.remove-db").click(function() {
+				var item = $(this).parent().parent();
+				$.post(
+					"{% url 'database' %}", 
+					{
+						action: 'delete-db', 
+						id: item.attr("itemvalue"), 
+						csrfmiddlewaretoken: csrf
+					}, function(r) {
+						var data = JSON.parse(r);
+						if(data['status'] == 'success') {
+							item.remove();
+						} else {
+							alert("Something went wrong"); 
+						}
+					} ); 
+				return false;
+			}); 
+		}); 
+	</script>
+
+{% endblock %}
