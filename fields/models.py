@@ -15,7 +15,7 @@ class XField(models.Model):
 		return self.name
 
 class UrlGroup(models.Model):
-	name = models.CharField(max_length=255, unique=True)
+	name = models.CharField(max_length=255)
 	user = models.ForeignKey(User)
 
 	def __str__(self):
