@@ -21,3 +21,4 @@ class UrlGroupAdmin(admin.ModelAdmin):
 
 admin.site.register(models.UrlGroup, UrlGroupAdmin)
 
+admin.site.register(models.RuleType)

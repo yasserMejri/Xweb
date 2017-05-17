@@ -273,9 +273,12 @@ def dbfields(request, id):
 	fields = models.XField.objects.filter(site_group = database)
 	urls = models.Url.objects.filter(group = database)
 
+	rules = models.RuleType.objects.all()
+
 	return render(request, 'dbfields.html', {
 		'user': request.user, 
 		'name': name, 
+		'rules': rules, 
 		'd_id': database.id, 
 		'fields': fields, 
 		'urls': urls, 
@@ -329,6 +332,7 @@ def dbfieldmanage(request):
 			field = models.XField(
 				name = request.POST.get('name'), 
 				rule = request.POST.get('rule'), 
+				rule_id = models.RuleType.objects.get(pk=int(request.POST.get('rule_id'))), 
 				site_group = database
 				)
 			field.save()
@@ -340,6 +344,21 @@ def dbfieldmanage(request):
 			return HttpResponse(json.dumps({
 				'status': 'error'
 				}))
+	if request.POST.get('action') == 'update-field':
+		try:
+			field = models.XField.objects.get(pk=int(request.POST.get('id')))
+			field.name =request.POST.get('name')
+			field.rule_id = models.RuleType.objects.get(pk=int(request.POST.get('rule_type')))
+			field.rule = request.POST.get('rule')
+			field.save()
+			return HttpResponse(json.dumps({
+				'status': 'success'
+				}))
+		except:
+			return HttpResponse(json.dumps({
+				'status': 'error'
+				}))
+
 	if request.POST.get('action') == 'new-url':
 		try:
 			url = models.Url(
@@ -355,6 +374,19 @@ def dbfieldmanage(request):
 			return HttpResponse(json.dumps({
 				'status': 'error'
 				}))
+	if request.POST.get('action') == 'update-url':
+		try:
+			url = models.Url.objects.get(pk=int(request.POST.get('id')))
+			url.url = request.POST.get('url')
+			url.save()
+			return HttpResponse(json.dumps({
+				'status': 'success'
+				}))
+		except:
+			return HttpResponse(json.dumps({
+				'status': 'error'
+				}))
+
 	if request.POST.get('action') == 'del-field':
 		try:
 			field = models.XField.objects.get(pk=int(request.POST.get('id'))).delete()

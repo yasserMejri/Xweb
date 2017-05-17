@@ -176,7 +176,21 @@ div.table-wrapper tr.muted {
 	background-color: #ffc;
 }
 
-button.r-button {
+.r-button {
 	position: relative;
 	margin-right: 20px;
+}
+
+div.items-wrapper span.data-item {
+	text-overflow: ellipsis;
+	overflow-x: hidden;
+	white-space: nowrap;
+}
+
+div.items-wrapper span.data-item:focus {
+	overflow-x: visible;
+}
+
+div.items-wrapper span.update-item {
+	display: none;
 }

@@ -6,9 +6,19 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 
+class RuleType(models.Model):
+	name = models.CharField(max_length=50)
+	field_enable = models.BooleanField(default = True)
+	placeholder = models.CharField(max_length=50)
+	required = models.BooleanField(default=True)
+
+	def __str__(self):
+		return self.name
+
 class XField(models.Model):
 	name = models.CharField(max_length=50)
-	rule = models.CharField(max_length=255) # JSON formatted string for storing all regex rules.
+	rule = models.CharField(max_length=255, blank=True, null=True) # JSON formatted string for storing all regex rules.
+	rule_id = models.ForeignKey(RuleType)
 	site_group = models.ForeignKey("UrlGroup")
 
 	def __str__(self):

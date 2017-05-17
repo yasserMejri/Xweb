@@ -26,7 +26,7 @@
 	<div class="collapse" id="db-schema">
 		<div class="fields col-sm-7">
 			<div class="field-header">
-				<label class="col-sm-4"> Name </label>
+				<label class="col-sm-2"> Name </label>
 				<label class="col-sm-8"> Rule </label>
 			</div>
 			<hr class="col-sm-11" /> 
@@ -34,9 +34,17 @@
 				<div id="field-items">
 					{% for field in fields %}
 						<div class="field-item col-sm-12"> 
-							<span class="col-sm-4"> {{ field.name }} </span> 
-							<span > {{ field.rule }} </span> 
-							<span itemvalue="{{ field.id }}" class="remove-item glyphicon glyphicon-remove pull-right"> </span> 
+							<span class="col-sm-2 field-item-name data-item" contenteditable="true" > {{ field.name }} </span> 
+							<select class="col-sm-5 rule-types" >
+								{% for rule in rules %}
+									<option value="{{ rule.id }}" itemholder = "{{ rule.placeholder }}" itemdisable="{{ rule.field_enable }}" itemrequired="{{ rule.required }}" {% if rule.id == field.rule_id.id %} selected {% endif %} > 
+										{{ rule.name }} 
+									</option>
+								{% endfor %}
+							</select>
+							<span class="col-sm-3 field-item-rule data-item" contenteditable="true" > {{ field.rule }} </span> 
+							<span itemvalue="{{ field.id }}" class="remove-item glyphicon glyphicon-remove pull-right r-button"> </span> 
+							<span itemvalue="{{ field.id }}" class="update-item glyphicon glyphicon-floppy-disk pull-right r-button"> </span> 
 						</div> 
 						<div  class="col-sm-12"> <hr/> </div>
 						<div class="clearfix"> </div>
@@ -47,11 +55,12 @@
 			<div class="field-item">
 				<div class="col-sm-4 "> <input type="text" id="field-name" class="form-control" placeholder="Field name" /> </div>
 				<div class="col-md-5" >
-					<select id="rule-options" class="form-control">
-						<option value="0" itemholder = "xxxx-xxxxx"> Numeric value between </option>
-						<option value="1" itemholder = "xxx,xx,xxxx" > Text will include </option>
-						<option value="2" itemholder = "xxx,xx,xxxx" > Result will include </option>
-						<option value="3" itemholder = "X"> Symbol </option>
+					<select class="form-control" id="rule-options">
+						{% for rule in rules %}
+							<option value="{{ rule.id }}" itemholder = "{{ rule.placeholder }}" itemdisable="{{ rule.field_enable }}" itemrequired="{{ rule.required }}" {% if rule.id == field.rule_id.id %} selected {% endif %} > 
+								{{ rule.name }} 
+							</option>
+						{% endfor %}
 					</select>
 				</div>
 				<div class="col-sm-3 "> <input type="text" id="field-rule" class="form-control" placeholder="Field rule" /> </div>
@@ -79,8 +88,9 @@
 				<div id="url-items" >
 					{% for url_ in  urls %}
 						<div class="url-item col-sm-12"> 
-							<span> {{ url_.url }} </span> 
-							<span itemvalue="{{ url_.id }}" class="remove-item glyphicon glyphicon-remove pull-right"> </span>  
+							<span class="col-sm-9 url-item-url data-item" contenteditable="true" > {{ url_.url }} </span> 
+							<span itemvalue="{{ url_.id }}" class="remove-item glyphicon glyphicon-remove pull-right r-button"> </span> 
+							<span itemvalue="{{ url_.id }}" class="update-item glyphicon glyphicon-floppy-disk pull-right r-button"> </span>
 						</div> 
 						<div class="col-sm-12"> <hr/> </div>
 					{% endfor %}
@@ -152,23 +162,45 @@
 {% block scripts %}
 	<script language="javascript">
 		$(document).ready(function() {
-			var field_item = '<div class="field-item col-sm-12"> <span class="col-sm-4"> FIELD_NAME </span> <span > FIELD_RULE </span> <span itemvalue = "FIELD_ID" class="remove-item glyphicon glyphicon-remove pull-right"> </span> </div> <div  class="col-sm-12"> <hr/> </div>'
-			var url_item = '<div class="url-item col-sm-12"> <span> URL </span> <span itemvalue="URL_ID" class="remove-item glyphicon glyphicon-remove pull-right"> </span>  </div> <div class="col-sm-12"> <hr/> </div>'
+
+			var url_item = '<div class="url-item col-sm-12"> <span class="col-sm-9 url-item-url data-item" contenteditable="true" > URL </span>  <span itemvalue="URL_ID" class="remove-item glyphicon glyphicon-remove pull-right r-button"> </span> <span itemvalue="URL_ID" class="update-item glyphicon glyphicon-floppy-disk pull-right r-button"> </span> </div> <div class="col-sm-12"> <hr/> </div>';
 
 			var csrf = $("{% csrf_token %}").val(); 
 			var d_id = {{ d_id }}; 
 
 			$("#rule-options").change(function() {
 				$("#field-rule").attr('placeholder', $(this).children('option:selected').attr("itemholder"));
+				if($(this).children('option:selected').attr('itemdisable') == 'False')
+					$("#field-rule").attr('disabled', 'disabled');
+				else 
+					$("#field-rule").removeAttr('disabled');
 			}); 
 
 			$("#rule-options").change();
 
 			$("#new-field").click(function() {
 				var field_name = $("#field-name").val();
-				var field_rule = $("#rule-options option:selected").text() + ':' + $("#field-rule").val();
+				var field_rule = $("#field-rule").val();
+				var field_rule_id = $("#rule-options option:selected").val();
 				if(field_name == '')
 					return;
+				if($("#rule-options option:selected").attr('itemrequired') == 'True' && field_rule == '')
+					return; 
+
+				var field_item = '<div class="url-item col-sm-12"> '+
+					' <span class="col-sm-2 field-item-name data-item" contenteditable="true" > FIELD_NAME </span> '+
+							'<select class="col-sm-5 rule-types" >' +
+								'{% for rule in rules %}' +
+									'<option value="{{ rule.id }}" itemholder = "{{ rule.placeholder }}" itemdisable="{{ rule.field_enable }}" itemrequired="{{ rule.required }}" > ' +
+										'{{ rule.name }} ' +
+									'</option>' +
+								'{% endfor %}' +
+							'</select>' +
+							'<span class="col-sm-3 field-item-rule data-item" contenteditable="true" > FIELD_RULE </span> '+
+							'<span itemvalue="FIELD_ID" class="remove-item glyphicon glyphicon-remove pull-right r-button"> </span> ' +
+							'<span itemvalue="FIELD_ID" class="update-item glyphicon glyphicon-floppy-disk pull-right r-button"> </span> ' +
+					'</div> <div class="col-sm-12"> <hr/> </div>';
+
 
 				$.post(
 					"{% url 'database-manage' %}", 
@@ -177,6 +209,7 @@
 						d_id: d_id, 
 						name: field_name, 
 						rule: field_rule, 
+						rule_id: field_rule_id, 
 						csrfmiddlewaretoken: csrf
 					}, function(r) {
 						var data = JSON.parse(r);
@@ -184,7 +217,8 @@
 							$("#field-name").val('');
 							$("#field-rule").val('');
 							console.log(field_name + ':' + field_rule);
-							$("#field-items").append(field_item.replace("FIELD_NAME", field_name).replace("FIELD_RULE", field_rule).replace('FIELD_ID', data['id']));
+							$("#field-items").append(field_item.replace("FIELD_NAME", field_name).replace("FIELD_RULE", field_rule).replace(/FIELD_ID/g, data['id']));
+							$($("#field-items select")[$("#field-items select").length - 1]).children('option[value="'+field_rule_id+'"]').attr('selected', true);
 							refresh_db();
 							attachactions();
 						} else {
@@ -209,7 +243,7 @@
 						var data = JSON.parse(r); 
 						if(data['status'] == 'success') {
 							$("#url-item").val('');
-							$("#url-items").append(url_item.replace("URL", url).replace('URL_ID', data['id'])); 
+							$("#url-items").append(url_item.replace("URL", url).replace(/URL_ID/g, data['id'])); 
 							refresh_db();
 							attachactions();
 						} else { 
@@ -218,6 +252,15 @@
 					} ); 
 			}); 
 			function attachactions() {
+
+				$(".rule-types").change(function() {
+					if($(this).children('option:selected').attr('itemdisable') == 'False')
+						$(this).next().attr('disabled', 'disabled');
+					else 
+						$(this).next().removeAttr('disabled');
+					$(this).parent().children('span.update-item').show();
+				}); 
+				
 				$("#field-items .remove-item").click(function() {
 					var id = $(this).attr("itemvalue");
 					var item = $(this).parent()
@@ -239,6 +282,51 @@
 							}
 						} ); 
 				}); 
+
+				$("#field-items .update-item").click(function() {
+					var id = $(this).attr("itemvalue");
+					var item = $(this);
+					$.post(
+						"{% url 'database-manage' %}", 
+						{
+							action: 'update-field', 
+							d_id: d_id, 
+							id: id, 
+							name: $(this).parent().children('.field-item-name').text(), 
+							rule_type: $(this).parent().children('.rule-types').val(), 
+							rule: $(this).parent().children('.field-item-rule').text(), 
+							csrfmiddlewaretoken: csrf
+						}, function(r) {
+							var data = JSON.parse(r);
+							if(data['status'] == 'success') {
+								item.hide();
+							} else {
+								alert("Something went wrong"); 
+							}
+						} ); 
+				}); 
+
+				$("#url-items .update-item").click(function() {
+					var id = $(this).attr("itemvalue"); 
+					var item = $(this);
+					$.post(
+						"{% url 'database-manage' %}", 
+						{
+							action: 'update-url', 
+							d_id: d_id, 
+							id: id, 
+							url: $(this).parent().children(".url-item-url").text(), 
+							csrfmiddlewaretoken: csrf
+						}, function(r) {
+							var data = JSON.parse(r);
+							if(data['status'] == 'success') {
+								item.hide()
+							} else {
+								alert("Something went wrong"); 
+							}
+						} ); 
+				}); 
+
 				$("#url-items .remove-item").click(function() {
 					var id = $(this).attr("itemvalue"); 
 					var item = $(this).parent()
@@ -259,6 +347,11 @@
 								alert("Something went wrong"); 
 							}
 						} ); 
+				}); 
+
+
+				$(".data-item").blur(function() {
+					$(this).parent().children('.update-item').show();
 				}); 
 			}
 
