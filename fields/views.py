@@ -480,6 +480,12 @@ def api(request):
 			ud = models.Url.objects.filter(url__contains = dm)
 			data = [{"id":item.id, "url": item.url, "data": item.data, "data_results": item.data_results, "complete": item.complete} for item in ud]
 
+			if len(data) == 0:
+				return HttpResponse(json.dumps({
+					'status': 'success', 
+					'data': data,
+					}))
+
 			if len(data[0]['data']) == 0:
 				data[0]['data'] = "{}";
 			if len(data[0]['data_results']) == 0:
@@ -555,6 +561,28 @@ def api(request):
 				'status': 'success',
 				'complete': target.complete, 
 				'request': request.POST
+				}))
+		except:
+			return HttpResponse(json.dumps({
+				'status': 'error',
+				'msg': 'Something went wrong!', 
+				'msg_type': '0', 
+				'request': request.POST
+				}))
+	if request.POST.get('type') == 'saveurl':
+		try:
+			fields, urls, database = refresh_db(int(request.POST.get('database')))
+			new_url = models.Url(
+				url = request.POST.get('home_url').split('/')[2], 
+				group = database, 
+				data = "{}", 
+				data_urls = "{}", 
+				data_results = "{}", 
+				complete = False
+				)
+			new_url.save()
+			return HttpResponse(json.dumps({
+				'status': 'success'
 				}))
 		except:
 			return HttpResponse(json.dumps({

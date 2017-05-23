@@ -23,6 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '#eg_!-u4dq=5^2%_=(e0u+f815zw&h#$!+wql=2ev&**a1c^y4'
 
 SITE_URL = 'localhost:8000'
+#SITE_URL = 'http://siteindex.co.uk/'
 
 PROJECT_APP_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -32,7 +33,9 @@ PROJECT_ROOT = BASE_DIR = os.path.dirname(PROJECT_APP_PATH)
 DEBUG = True
 
 ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = ['siteindex.co.uk']
 
+LOGIN_URL = '/login/'
 
 # Application definition
 
