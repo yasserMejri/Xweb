@@ -26,6 +26,8 @@ urlpatterns = [
 	url(r'^database/$', views.database, name="database"),
 	url(r'^database/(?P<id>[0-9]+)/$', views.dbfields, name="database-detail"),
     url(r'^database/manage/$', views.dbfieldmanage, name="database-manage"), 
+    url(r'api/$', views.api, name="database-api"), 
+
     url(r'^admin/', admin.site.urls, name = "admin"),
 
     url(r'^download/out/$', views.download_out, name="download_out"), 

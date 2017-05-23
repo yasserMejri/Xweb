@@ -155,6 +155,7 @@ div.items-wrapper {
 
 div.table-wrapper {
 	overflow-x: scroll;
+	height: 700px;
 }
 
 div.table-wrapper td {

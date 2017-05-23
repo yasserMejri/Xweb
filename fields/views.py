@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 from django.shortcuts import render
 import forms
 from django.contrib.auth.models import User
+from django.views.decorators.csrf import csrf_exempt
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
@@ -23,7 +24,6 @@ import mimetypes
 # Create your views here.
 
 def index(request):
-
 	return render(request, 'index.html')
 
 def x_login(request):
@@ -69,6 +69,26 @@ def x_register(request):
 	return render(request, 'register.html', {
 		'form': forms.RegisterForm
 		})
+
+def refresh_db(d_id):
+	database = models.UrlGroup.objects.get(pk=d_id)
+	d_fields = models.XField.objects.filter(site_group = database)
+	d_urls = models.Url.objects.filter(group = database)
+	fields = {}
+	urls = {}
+	data = {}
+	for item in d_fields:
+		fields[item.id] = {
+			'name': item.name,
+			'rule': item.rule
+		}
+	for item in d_urls:
+		urls[item.id] = {
+			'url': item.url,
+			'data': item.data, 
+			'complete': item.complete,
+		}
+	return fields, urls, database
 
 @login_required
 def database(request):
@@ -130,17 +150,25 @@ def dbfields(request, id):
 	except:
 		return HttpResponse("Bad Request")
 
+	if database.user != request.user:
+		return HttpResponse("404")
+
 	if request.method == 'POST':
 		if request.POST.get('action') == 'import-field':
 			file = request.FILES['import-file']
 			reader = csv.reader(file)
 			database = models.UrlGroup.objects.get(pk=int(request.POST.get('d_id')))
 			count = 0
+			print "import-field"
+			print reader
+			rule_id = models.RuleType.objects.all()[0]
 			for row in reader:
+				print row
 				try:
 					new_field = models.XField(
 						name = row[0], 
-						rule = row[1], 
+						rule = ','.join(row[1:]), 
+						rule_id = rule_id,
 						site_group = database
 						)
 					new_field.save()
@@ -165,7 +193,7 @@ def dbfields(request, id):
 					count = count + 1
 				except:
 					continue
-			msg = "Success! " + str(count) + "field(s) have been added"
+			msg = "Success! " + str(count) + "url(s) have been added"
 			msg_type = 'success'
 
 		if request.POST.get('action') == 'export':
@@ -220,24 +248,7 @@ def dbfields(request, id):
 
 		if request.POST.get('action') == 'refresh-table':
 			try:
-				database = models.UrlGroup.objects.get(pk=int(request.POST.get('d_id')))
-				d_fields = models.XField.objects.filter(site_group = database)
-				d_urls = models.Url.objects.filter(group = database)
-				fields = {}
-				urls = {}
-				data = {}
-				for item in d_fields:
-					fields[item.id] = {
-						'name': item.name,
-						'rule': item.rule
-					}
-				for item in d_urls:
-					urls[item.id] = {
-						'url': item.url,
-						'data': item.data
-					}
-				print fields
-				print urls
+				fields, urls, database = refresh_db(int(request.POST.get('d_id')))
 				print json.dumps(fields)
 				print json.dumps(urls)
 				return HttpResponse(json.dumps({
@@ -267,6 +278,10 @@ def dbfields(request, id):
 					'status': 'error', 
 					'request': request.POST
 					}))
+		# return HttpResponse(json.dumps({
+		# 		'status': msg_type, 
+		# 		'msg': msg
+		# 	}))
 
 
 	name = database.name
@@ -285,7 +300,6 @@ def dbfields(request, id):
 		'msg': msg, 
 		'msg_type': msg_type
 		})
-
 
 @login_required
 def dbdatamanage(request):
@@ -409,7 +423,6 @@ def dbfieldmanage(request):
 				'status': 'error'
 				}))
 
-
 @login_required
 def download_out(request):
 
@@ -434,3 +447,125 @@ def download_crx(request):
 	response['Content-Disposition'] = 'attachment; filename=%s' % smart_str( os.path.basename( path ) ) # same here
 
 	return response	
+
+@csrf_exempt
+def api(request):
+
+	if request.method == 'GET':
+		return HttpResponse("POST requests only")
+
+	if request.POST.get('type') == 'login':
+		username = request.POST.get('username')
+		password = request.POST.get('password')
+		user = authenticate(request, username=username, password=password)
+		if user is not None:
+			dbs = models.UrlGroup.objects.filter(user=user)
+			databases = [{"id":item.id, "name":item.name} for item in dbs]
+			return HttpResponse(json.dumps({
+				'status': 'success', 
+				'databases': databases, 
+				'user': user.id
+				}))
+		else:
+			return HttpResponse(json.dumps({
+				'status': 'error', 
+				'msg': 'Username or password is incorrect'
+				}))
+
+	if request.POST.get('type') == 'get_this': 
+		try:
+			user = User.objects.get(pk=int(request.POST.get('user')))
+			fields, urls, database = refresh_db(int(request.POST.get('database')))
+			dm = request.POST.get('home_url').split('/')[2]
+			ud = models.Url.objects.filter(url__contains = dm)
+			data = [{"id":item.id, "url": item.url, "data": item.data, "data_results": item.data_results, "complete": item.complete} for item in ud]
+
+			if len(data[0]['data']) == 0:
+				data[0]['data'] = "{}";
+			if len(data[0]['data_results']) == 0:
+				data[0]['data_results'] = "{}"
+
+			nxt_complete_url = ''
+			nxt_url = ''
+			flag = False
+			for key in urls:
+				if flag:
+					if urls[key]['complete'] == False:
+						nxt_complete_url = urls[key]['url']
+						if nxt_url != '':
+							break
+					if nxt_url == '':
+						nxt_url = urls[key]['url']
+				if key == data[0]['id']:
+					flag = True
+
+			return HttpResponse(json.dumps({
+				'status': 'success', 
+				'fields': fields, 
+				'urls': urls, 
+				'data': data , 
+				'nxt_url': nxt_url, 
+				'nxt_complete_url': nxt_complete_url
+				}))
+		except:
+			return HttpResponse(json.dumps({
+				'status': 'error',
+				'msg': 'Something went wrong!', 
+				'msg_type': '0', 
+				'request': request.POST
+				}))
+
+	if request.POST.get('type') == 'save': 
+		try:
+			user = User.objects.get(pk=int(request.POST.get('user')))
+			fields, urls, database = refresh_db(int(request.POST.get('database')))
+			target = models.Url.objects.get(pk=int(request.POST.get('url_id')))
+
+			data = json.loads(target.data) if len(target.data) != 0 else {}
+			data_urls = json.loads(target.data_urls) if len(target.data_urls) != 0 else {}
+			data_results = json.loads(target.data_results) if len(target.data_results) != 0 else {}
+
+			field = request.POST.get('field')
+			data[field] = request.POST.get('content')
+			data_urls[field] = request.POST.get('home_url')
+			data_results[field] = request.POST.get('result')
+
+			target.data = json.dumps(data)
+			target.data_urls = json.dumps(data_urls)
+			target.data_results = json.dumps(data_results)
+
+			target.save()
+			return HttpResponse(json.dumps({
+				'status': 'success', 
+				}))
+
+		except:
+			return HttpResponse(json.dumps({
+				'status': 'error',
+				'msg': 'Something went wrong!', 
+				'msg_type': '0', 
+				'request': request.POST
+				}))
+	if request.POST.get('type') == 'completeinverse':
+		try:
+			target = models.Url.objects.get(pk=int(request.POST.get('id')))
+			target.complete  = not target.complete
+			target.save()
+			return HttpResponse(json.dumps({
+				'status': 'success',
+				'complete': target.complete, 
+				'request': request.POST
+				}))
+		except:
+			return HttpResponse(json.dumps({
+				'status': 'error',
+				'msg': 'Something went wrong!', 
+				'msg_type': '0', 
+				'request': request.POST
+				}))
+
+
+	return HttpResponse(json.dumps({
+		'status': 'none', 
+		'request': request.POST
+		}))
