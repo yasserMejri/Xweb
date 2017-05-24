@@ -57,7 +57,7 @@
 				<div class="col-md-5" >
 					<select class="form-control" id="rule-options">
 						{% for rule in rules %}
-							<option value="{{ rule.id }}" itemholder = "{{ rule.placeholder }}" itemdisable="{{ rule.field_enable }}" itemrequired="{{ rule.required }}" {% if rule.id == field.rule_id.id %} selected {% endif %} > 
+							<option value="{{ rule.id }}" itemvalue="{{ rule.default }}" itemholder = "{{ rule.placeholder }}" itemdisable="{{ rule.field_enable }}" itemrequired="{{ rule.required }}" {% if rule.id == field.rule_id.id %} selected {% endif %} > 
 								{{ rule.name }} 
 							</option>
 						{% endfor %}
@@ -170,10 +170,13 @@
 
 			$("#rule-options").change(function() {
 				$("#field-rule").attr('placeholder', $(this).children('option:selected').attr("itemholder"));
-				if($(this).children('option:selected').attr('itemdisable') == 'False')
+				if($(this).children('option:selected').attr('itemdisable') == 'False') {
 					$("#field-rule").attr('disabled', 'disabled');
+					$("#field-rule").val($(this).children('option:selected').attr('itemvalue'));
+				}
 				else 
 					$("#field-rule").removeAttr('disabled');
+
 			}); 
 
 			$("#rule-options").change();
