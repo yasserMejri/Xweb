@@ -480,7 +480,7 @@ def api(request):
 			ud = models.Url.objects.filter(url__contains = dm)
 			data = [{"id":item.id, "url": item.url, "data": item.data, "data_results": item.data_results, "complete": item.complete} for item in ud]
 
-			if ud not in urls:
+			if len(ud) != 0 and ud[0].group != database:
 				ud = []
 
 			if len(data) == 0:
