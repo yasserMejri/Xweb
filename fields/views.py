@@ -477,11 +477,8 @@ def api(request):
 			user = User.objects.get(pk=int(request.POST.get('user')))
 			fields, urls, database = refresh_db(int(request.POST.get('database')))
 			dm = request.POST.get('home_url').split('/')[2]
-			ud = models.Url.objects.filter(url__contains = dm)
+			ud = models.Url.objects.filter(url__contains = dm, group = database)
 			data = [{"id":item.id, "url": item.url, "data": item.data, "data_results": item.data_results, "complete": item.complete} for item in ud]
-
-			if len(ud) != 0 and ud[0].group != database:
-				ud = []
 
 			if len(data) == 0:
 				return HttpResponse(json.dumps({
